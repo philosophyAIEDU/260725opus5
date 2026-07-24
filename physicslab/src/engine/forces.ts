@@ -151,6 +151,38 @@ export function springForces(
 }
 
 /**
+ * 지금 이 시각에 이 물체에 작용 중인 외력 (사람이 미는 힘 등).
+ * 시간 구간을 벗어나면 0 — "손을 떼는" 순간이 여기서 만들어집니다.
+ */
+export function appliedForce(
+  world: World,
+  bodyIndex: number,
+  out: ForceOut,
+): void {
+  const list = world.applied;
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i]!;
+    if (f.body !== bodyIndex) continue;
+    if (world.time < f.startTime || world.time >= f.endTime) continue;
+    out.fx += f.fx;
+    out.fy += f.fy;
+  }
+}
+
+/** 표시용: 지금 작용 중인 외력의 합 크기 [N]. */
+export function appliedForceMagnitude(world: World, bodyIndex: number): number {
+  let fx = 0;
+  let fy = 0;
+  for (const f of world.applied) {
+    if (f.body !== bodyIndex) continue;
+    if (world.time < f.startTime || world.time >= f.endTime) continue;
+    fx += f.fx;
+    fy += f.fy;
+  }
+  return Math.hypot(fx, fy);
+}
+
+/**
  * 자유 물체에 작용하는 총 힘.
  *
  * (px, py, vx, vy) 를 명시적으로 받는 이유: 예측-보정과 RK4 가
@@ -175,6 +207,7 @@ export function totalForce(
   electricForce(body, world, out);
   linearDragForce(body, vx, vy, out);
   quadraticDragForce(body, vx, vy, out);
+  if (world.applied.length > 0) appliedForce(world, bodyIndex, out);
   if (world.springs.length > 0) {
     springForces(world, bodyIndex, px, py, vx, vy, out);
   }

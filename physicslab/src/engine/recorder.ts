@@ -206,6 +206,7 @@ export function serializeWorld(
   out[offset + 3] = world.thermal;
   out[offset + 4] = bodyCount;
   out[offset + 5] = scalarCount;
+  out[offset + 6] = world.impulse;
 
   for (let i = 0; i < bodyCount; i++) {
     const b = world.bodies[i];
@@ -243,6 +244,7 @@ export function deserializeWorld(
   world.steps = src[offset + 1]!;
   world.rng.s = src[offset + 2]! >>> 0;
   world.thermal = src[offset + 3]!;
+  world.impulse = src[offset + 6]!;
 
   for (let i = 0; i < bodyCount; i++) {
     const b = world.bodies[i];
@@ -284,6 +286,20 @@ function writeKeyframe(rec: Recorder, world: World, frame: number): void {
   );
   rec.exactFrame[slot] = frame;
   rec.exactWritten++;
+}
+
+/**
+ * frame 이후의 기록을 버립니다.
+ *
+ * 학생이 과거로 되감은 뒤 다시 재생하면, 그 지점부터가 새 기록이 됩니다.
+ * (물리는 결정론적이라 궤적 자체는 같지만, 배속을 바꿨다면 프레임 경계가
+ *  달라지므로 옛 기록을 남겨두면 프레임↔substep 대응이 어긋납니다.)
+ */
+export function truncateRecorder(rec: Recorder, frame: number): void {
+  rec.written = Math.max(0, frame + 1);
+  for (let slot = 0; slot < rec.config.keyframeCapacity; slot++) {
+    if (rec.exactFrame[slot]! > frame) rec.exactFrame[slot] = -1;
+  }
 }
 
 /**

@@ -1,27 +1,26 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    // DOM 을 넣지 않습니다. 엔진과 스테이지는 브라우저 API 에 의존하지 않아야 하고,
+    // lib 에서 DOM 을 빼두면 실수로 document/window 를 쓰는 순간 컴파일이 막힙니다.
+    "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "types": ["vite/client", "vitest/globals"],
+    "types": ["vitest/globals", "node"],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
-    "exactOptionalPropertyTypes": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
 
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "useDefineForClassFields": true
   },
-  "include": ["src", "tests", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "tests", "vitest.config.ts"]
 }

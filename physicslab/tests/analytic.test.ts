@@ -342,6 +342,46 @@ describe('⑤ 경사면 임계각', () => {
   });
 });
 
+describe('⑤-보강 마찰이 한 일은 열로 보존된다', () => {
+  /**
+   * 회귀 테스트.
+   * 마찰이 있는 트랙에서 빠져나간 역학적 에너지를 열에너지로 옮겨 적지 않으면,
+   * 에너지가 그냥 **사라집니다**. "에너지는 사라지지 않고 형태만 바뀐다"를
+   * 가르치는 앱에서 이건 치명적이고, 화면상으로는 아무 증상이 없어
+   * 자동 검증이 아니면 잡히지 않습니다.
+   */
+  it('운동E + 위치E + 열E 총합이 1e-3 이내로 일정하다', () => {
+    const muK = 0.25;
+    const track = makeInclineTrack({ x: 0, y: 12 }, Math.PI / 5, 40, muK, muK);
+    const block = createBody({
+      id: 0, tag: 'block', kind: 'track', mass: 3,
+      radius: 0.1, trackIndex: 0, s: 0, u: 0,
+    });
+    const world = createWorld({
+      dt: DT, tracks: [track], bodies: [block],
+      fields: { gravity: { x: 0, y: -G } },
+      integrator: 'semiImplicitPC',
+    });
+
+    const e0 = computeEnergy(world).total;
+    let worst = 0;
+    const steps = Math.round(4 / DT);
+    for (let i = 0; i < steps; i++) {
+      step(world);
+      if (i % 240 === 0) {
+        const e = computeEnergy(world);
+        worst = Math.max(worst, Math.abs(e.total - e0) / Math.abs(e0));
+      }
+    }
+    const end = computeEnergy(world);
+
+    // 마찰이 실제로 일을 했어야 의미 있는 검증입니다.
+    expect(end.thermal).toBeGreaterThan(Math.abs(e0) * 0.05);
+    record('⑤+', '마찰 포함 에너지 총합 보존', end.total, e0, worst, 1e-3, ' J');
+    expect(worst).toBeLessThan(1e-3);
+  });
+});
+
 // ────────────────────────────────────────────────────────────
 // ⑥ 2차 항력 종단속도
 // ────────────────────────────────────────────────────────────

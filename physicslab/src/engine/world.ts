@@ -73,6 +73,7 @@ export interface WorldInit {
   walls?: World['walls'];
   springs?: World['springs'];
   tracks?: TrackPath[];
+  applied?: World['applied'];
   fields?: Partial<Fields>;
   waves?: World['waves'];
   integrator?: IntegratorKind;
@@ -91,6 +92,7 @@ export function createWorld(init: WorldInit = {}): World {
     walls: init.walls ?? [],
     springs: init.springs ?? [],
     tracks: init.tracks ?? [],
+    applied: init.applied ?? [],
     fields: {
       gravity: {
         x: init.fields?.gravity?.x ?? 0,
@@ -106,6 +108,7 @@ export function createWorld(init: WorldInit = {}): World {
     integrator: init.integrator ?? 'velocityVerlet',
     rng: createRng(init.seed ?? 0x9e3779b9),
     thermal: 0,
+    impulse: 0,
     events: createEventBuffer(),
     userScalars: new Float64Array(init.userScalarCount ?? 4),
   };
@@ -120,7 +123,16 @@ export function createWorld(init: WorldInit = {}): World {
   // 베를레는 첫 스텝에 a 가 필요합니다.
   for (let i = 0; i < world.bodies.length; i++) {
     const b = world.bodies[i]!;
-    if (b.trackIndex < 0) primeAcceleration(world, i, b);
+    if (b.trackIndex < 0) {
+      primeAcceleration(world, i, b);
+    } else {
+      const track = world.tracks[b.trackIndex];
+      if (track) {
+        trackAccel(world, i, b, track, b.s, b.u, trackAccelOut);
+        b.normalForce = trackAccelOut.normal;
+        writeTrackAcceleration(b, trackAccelOut.at);
+      }
+    }
   }
   return world;
 }
@@ -143,8 +155,10 @@ export function syncTrackBody(world: World, body: Body): void {
 interface TrackAccelOut {
   at: number;
   normal: number;
+  /** 실제로 적용된 마찰력의 크기 [N]. 마찰이 한 일(열)을 계산하는 데 씁니다. */
+  friction: number;
 }
-const trackAccelOut: TrackAccelOut = { at: 0, normal: 0 };
+const trackAccelOut: TrackAccelOut = { at: 0, normal: 0, friction: 0 };
 
 /**
  * 트랙 위 접선 가속도와 수직항력.
@@ -177,18 +191,34 @@ function trackAccel(
   const nAbs = track.support === 'twoSided' ? Math.abs(N) : Math.max(0, N);
 
   let tangential = ft;
+  let friction = 0;
   if (Math.abs(u) < U_EPS) {
     // 정지 상태: 정지마찰은 "필요한 만큼" 생기되 μs·N 이 상한
     if (Math.abs(ft) <= track.muS * nAbs) {
       tangential = 0;
     } else {
-      tangential = ft - Math.sign(ft) * track.muK * nAbs;
+      friction = track.muK * nAbs;
+      tangential = ft - Math.sign(ft) * friction;
     }
   } else if (track.muK > 0) {
-    tangential = ft - Math.sign(u) * track.muK * nAbs;
+    friction = track.muK * nAbs;
+    tangential = ft - Math.sign(u) * friction;
   }
 
+  out.friction = friction;
   out.at = tangential * body.invMass;
+}
+
+/**
+ * 트랙 구속 물체의 **데카르트 가속도**를 프레네 분해로 채웁니다.
+ *   a = u̇ t̂ + u²κ n̂
+ * 접선 성분만이 아니라 구심 성분까지 포함해야 자유물체도와 가속도 화살표가
+ * 실제 운동과 맞습니다. (trackAccel 이 방금 채워둔 frame2 를 그대로 씁니다)
+ */
+function writeTrackAcceleration(body: Body, tangential: number): void {
+  const centripetal = body.u * body.u * frame2.kappa;
+  body.a.x = tangential * frame2.tx + centripetal * frame2.nx;
+  body.a.y = tangential * frame2.ty + centripetal * frame2.ny;
 }
 
 /** 트랙이 마찰도 항력도 없는 보존계인가 → 속도 베를레를 쓸 수 있는가 */
@@ -245,6 +275,16 @@ function stepTrackBody(
     s = body.s;
   }
 
+  // ── 마찰이 한 일 = 열에너지 ──────────────────────────────
+  // 이걸 빼먹으면 마찰이 있는 계에서 에너지가 그냥 **사라집니다**.
+  // "에너지는 사라지지 않고 형태만 바뀐다"가 이 엔진이 보여줘야 할 것이므로,
+  // 마찰로 빠져나간 몫을 반드시 열에너지로 옮겨 적어야 합니다.
+  //   dQ = |f_마찰| · |ds|
+  // (스텝 끝의 마찰력으로 한 스텝을 근사합니다. h = 1/960 s 에서 1차 정확.)
+  if (trackAccelOut.friction > 0) {
+    world.thermal += trackAccelOut.friction * Math.abs(s - body.s);
+  }
+
   const len = trackLength(track);
   if (track.closed && len > 0) {
     // 닫힌 트랙(진자·원형 레일)은 호길이가 한 바퀴마다 되감깁니다.
@@ -258,6 +298,7 @@ function stepTrackBody(
   trackAccel(world, index, body, track, body.s, body.u, trackAccelOut);
   body.normalForce = trackAccelOut.normal;
   body.sticking = Math.abs(body.u) < U_EPS && trackAccelOut.at === 0;
+  writeTrackAcceleration(body, trackAccelOut.at);
 
   if (body.sticking !== wasSticking) {
     pushEvent(
@@ -365,10 +406,16 @@ function advanceFreeBodies(world: World, h: number, kind: IntegratorKind): void 
     } else if (impact.kind === IMPACT_BODY) {
       const a = world.bodies[impact.a]!;
       const b = world.bodies[impact.b]!;
+      const vx0 = a.v.x;
+      const vy0 = a.v.y;
       world.thermal += resolveBodyImpact(
         a, b, impact.nx, impact.ny,
         world.events, impact.a, impact.b, t,
       );
+      // 물체끼리 주고받은 충격량의 **누적** 크기 |Δp| = m|Δv|.
+      // events 버퍼는 substep 마다 비워지므로, 프레임 경계에서 측정하려면
+      // 이렇게 상태에 누적해 두어야 합니다 (스냅샷에도 함께 저장됩니다).
+      world.impulse += a.mass * Math.hypot(a.v.x - vx0, a.v.y - vy0);
       separate(a, impact.nx, impact.ny, SEPARATION_EPS);
       separate(b, -impact.nx, -impact.ny, SEPARATION_EPS);
       primeAcceleration(world, impact.a, a);
@@ -440,6 +487,7 @@ export function cloneWorld(w: World): World {
     walls: w.walls,
     springs: w.springs,
     tracks: w.tracks,
+    applied: w.applied,
     fields: {
       gravity: { x: w.fields.gravity.x, y: w.fields.gravity.y },
       electric: { x: w.fields.electric.x, y: w.fields.electric.y },
@@ -449,6 +497,7 @@ export function cloneWorld(w: World): World {
     integrator: w.integrator,
     rng: cloneRng(w.rng),
     thermal: w.thermal,
+    impulse: w.impulse,
     events: createEventBuffer(w.events.capacity),
     userScalars: new Float64Array(w.userScalars),
   };

@@ -2,8 +2,8 @@
  * 엔진 공용 타입.
  *
  * 이 파일을 포함한 engine/ 전체는 **DOM 의존성이 0**입니다.
- * 그래야 (a) 워커에서 그대로 돌리고 (b) Node 환경의 Vitest에서
- * 해석해와 대조하는 자동 검증이 가능합니다.
+ * 그래야 Node 환경의 Vitest에서 해석해와 대조하는 자동 검증이 가능합니다.
+ * (tsconfig 의 lib 에서 DOM 을 빼두었으므로 브라우저 API 를 쓰면 컴파일이 막힙니다)
  *
  * 단위는 전부 SI 입니다. 길이 m, 시간 s, 질량 kg, 전하 C, 자기장 T.
  */
@@ -146,6 +146,30 @@ export interface Spring {
   restLength: number;
   /** 감쇠 계수 [kg/s] */
   damping: number;
+}
+
+// ────────────────────────────────────────────────────────────
+// 외력 (사람이 미는 힘 등)
+// ────────────────────────────────────────────────────────────
+
+/**
+ * 정해진 시간 구간에만 작용하는 일정한 힘.
+ *
+ * "밀다가 손을 뗀다"를 표현하기 위한 것입니다.
+ * 시간에 의존하지만 그 시간은 world.time (상태의 일부) 이므로
+ * 결정론이 깨지지 않습니다 — 실시간 시계는 여전히 어디에도 개입하지 않습니다.
+ */
+export interface AppliedForce {
+  /** 대상 물체 인덱스 */
+  body: number;
+  fx: number;
+  fy: number;
+  /** 작용 시작 시각 [s] */
+  startTime: number;
+  /** 작용 종료 시각 [s]. Infinity 면 계속. */
+  endTime: number;
+  /** UI 라벨 (자유물체도에 표시) */
+  label: string;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -383,6 +407,7 @@ export interface World {
   walls: Wall[];
   springs: Spring[];
   tracks: TrackPath[];
+  applied: AppliedForce[];
   fields: Fields;
   waves: WaveField | null;
 
@@ -391,6 +416,12 @@ export interface World {
 
   /** 마찰과 비탄성 충돌로 누적된 열에너지 [J] */
   thermal: number;
+  /**
+   * 물체끼리 주고받은 충격량의 누적 크기 [N·s].
+   * events 버퍼는 substep 마다 비워지므로, 화면 프레임 경계에서 충돌 세기를
+   * 측정하려면 이렇게 상태로 누적해 두어야 합니다.
+   */
+  impulse: number;
 
   events: EventBuffer;
 
@@ -404,8 +435,11 @@ export interface World {
 
 /** 물체 1개가 스냅샷에서 차지하는 float 개수. */
 export const SNAPSHOT_BODY_STRIDE = 12;
-/** 스냅샷 헤더 float 개수: [time, steps, rngState, thermal, bodyCount, userScalarCount] */
-export const SNAPSHOT_HEADER = 6;
+/**
+ * 스냅샷 헤더 float 개수:
+ * [time, steps, rngState, thermal, bodyCount, userScalarCount, impulse]
+ */
+export const SNAPSHOT_HEADER = 7;
 
 export interface Snapshot {
   /** Float64 정확 상태. 되감은 뒤 이어서 돌려도 비트 단위로 동일해야 하므로 f64. */
