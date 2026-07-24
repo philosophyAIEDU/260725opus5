@@ -1,0 +1,17 @@
+# Netlify 배포 설정.
+# 저장소 루트가 아니라 physicslab/ 안에 앱이 있으므로 base 를 지정합니다.
+# 이 파일이 있으면 Netlify UI 에서 따로 설정할 것이 없습니다.
+
+[build]
+  base = "physicslab"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# 단일 페이지 앱이므로 알 수 없는 경로는 index.html 로 보냅니다.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

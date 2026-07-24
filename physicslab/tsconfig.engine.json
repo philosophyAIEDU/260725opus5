@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // DOM 을 넣지 않습니다. 엔진과 스테이지는 브라우저 API 에 의존하지 않아야 하고,
+    // lib 에서 DOM 을 빼두면 실수로 document/window 를 쓰는 순간 컴파일이 막힙니다.
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["vitest/globals", "node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "useDefineForClassFields": true
+  },
+  "include": ["src/engine", "src/content", "tests", "vitest.config.ts"]
+}
