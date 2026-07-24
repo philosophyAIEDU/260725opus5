@@ -1,0 +1,31 @@
+{
+  "name": "physicslab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "PhysicsLab: 예측 실험실 — 고등학생용 물리 시뮬레이션 학습 플랫폼",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "build:single": "tsc -b && vite build --mode single",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "5.2.0",
+    "typescript": "5.6.3",
+    "vite": "7.3.6",
+    "vite-plugin-pwa": "1.3.0",
+    "vite-plugin-singlefile": "2.3.3",
+    "vitest": "3.2.4"
+  }
+}
