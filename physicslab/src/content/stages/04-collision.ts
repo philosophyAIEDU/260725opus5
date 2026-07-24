@@ -328,6 +328,7 @@ $$e = -\\frac{v_1 - v_2}{u_1 - u_2}$$
   duration: 8,
   view: { xMin: -6.5, xMax: 6.5, yMin: -2.2, yMax: 2.2 },
   bodyTags: ['cart1', 'cart2'],
+  bodyLabels: ['수레 m₁', '수레 m₂'],
 
   decorations: () => [
     { kind: 'hline', y: -0.75, label: '에어트랙', colorIndex: 7, dashIndex: 0 },

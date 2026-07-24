@@ -378,6 +378,7 @@ $$h_{최소} = 2.5R$$
     };
   },
   bodyTags: ['car'],
+  bodyLabels: ['차량'],
 
   decorations: (p) => {
     const R = num(p, 'loopRadius', 3);

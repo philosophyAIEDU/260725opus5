@@ -375,10 +375,12 @@ $$y = 2A\\sin(kx)\\cos(\\omega t)$$
   duration: 14,
   view: { xMin: X_MIN, xMax: X_MAX, yMin: -3.2, yMax: 3.2 },
   bodyTags: ['probe'],
+  bodyLabels: ['관찰점'],
 
+  // 관찰점은 물체로 그려지므로(파형을 따라 위아래로 움직임) 장식에는 넣지 않습니다.
+  // 같은 이름표가 두 번 찍히면 학생이 서로 다른 것으로 오해합니다.
   decorations: () => [
     { kind: 'hline', y: 0, label: '평형 위치', colorIndex: 7, dashIndex: 2 },
-    { kind: 'marker', x: PROBE_X, y: 0, label: '관찰점', colorIndex: 4, radius: 0.12 },
   ],
 };
 

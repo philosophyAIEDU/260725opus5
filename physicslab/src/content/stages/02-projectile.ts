@@ -278,6 +278,7 @@ $\\sin 2\\theta$ 는 $\\theta$ 와 $90° - \\theta$ 에서 값이 같습니다.
     return { xMin: -3, xMax, yMin: -2, yMax: Math.max(apex + 4, xMax * 0.35) };
   },
   bodyTags: ['ball'],
+  bodyLabels: ['포탄'],
 
   decorations: (p) => {
     const target = num(p, 'target', 35);

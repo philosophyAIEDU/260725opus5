@@ -496,8 +496,13 @@ export interface StageSpec {
    * 함수로 주면 됩니다. 고정 장면이면 그냥 객체로 두세요.
    */
   view: ViewBox | ((p: Params) => ViewBox);
-  /** 물체 tag 순서 — Trace 인덱스와 대응 */
+  /** 물체 tag 순서 — Trace 인덱스와 대응. 코드 식별자입니다. */
   bodyTags: string[];
+  /**
+   * 화면에 보여줄 물체 이름. 생략하면 bodyTags 를 그대로 씁니다.
+   * 학생에게 'vacLight' 같은 코드 이름을 보여주지 않기 위한 것입니다.
+   */
+  bodyLabels?: string[];
   /** 과녁·구역 라벨 등 물리에 참여하지 않는 화면 요소 */
   decorations?: (p: Params) => Decoration[];
   /** 자유물체도 선언 ('forceBody' 오버레이를 쓸 때 필요) */

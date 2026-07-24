@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    // 화면 계층이 있으므로 여기서는 DOM 을 켭니다.
-    // 엔진(src/engine, src/content)의 DOM 비의존성은 tsconfig.engine.json 이
-    // DOM 없는 lib 로 따로 검사해서 계속 보장합니다.
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // DOM 을 넣지 않습니다. 엔진과 스테이지는 브라우저 API 에 의존하지 않아야 하고,
+    // lib 에서 DOM 을 빼두면 실수로 document/window 를 쓰는 순간 컴파일이 막힙니다.
+    "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": ["vitest/globals", "node", "vite/client"],
+    "types": ["vitest/globals", "node"],
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -21,8 +20,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "useDefineForClassFields": true,
-    "jsx": "react-jsx"
+    "useDefineForClassFields": true
   },
-  "include": ["src", "tests", "vitest.config.ts"]
+  "include": ["src/engine", "src/content", "tests", "vitest.config.ts"]
 }

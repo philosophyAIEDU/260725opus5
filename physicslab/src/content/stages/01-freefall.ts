@@ -293,4 +293,5 @@ $$v_t = \\sqrt{\\frac{mg}{c}}, \\qquad c = \\tfrac{1}{2}\\rho C_d A$$
     return { xMin: -5.5, xMax: 5.5, yMin: -1.5, yMax: h + 4 };
   },
   bodyTags: ['vacLight', 'vacHeavy', 'airLight', 'airHeavy'],
+  bodyLabels: ['진공·가벼움', '진공·무거움', '공기·가벼움', '공기·무거움'],
 };

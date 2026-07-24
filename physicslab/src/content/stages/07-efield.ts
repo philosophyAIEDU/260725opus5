@@ -316,6 +316,7 @@ $$y = \\frac{1}{2}\\left(\\frac{qE}{m}\\right)\\left(\\frac{L}{v_0}\\right)^2$$
     yMax: PLATE_GAP / 2 + 0.8,
   },
   bodyTags: ['charged', 'ghost'],
+  bodyLabels: ['하전입자', '유령(중력만)'],
 
   decorations: () => [
     {

@@ -380,6 +380,7 @@ $\\tan\\theta > \\mu_s$ 가 되면 아무도 밀지 않아도 미끄러지기 �
     };
   },
   bodyTags: ['block'],
+  bodyLabels: ['상자'],
 
   decorations: (p) => {
     const { tx, ty } = slopeUnit(num(p, 'angle', 0));
